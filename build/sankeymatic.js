@@ -307,6 +307,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
+
     // create a sankey object & its properties..
     sankey = d3.sankey()
         .nodeWidth(node_width)
@@ -428,11 +429,13 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("transform", null)
         .text(
             function (d) {
+
+                let percentage = (d.targetLinks.length && Number(d.value) / d.targetLinks[0].source.value * 100) || null;
+                //debugger;
                 return config_in.show_labels
                     ? d.name
-                        + ( config_in.include_values_in_node_labels
-                            ? ": " + units_format(d.value)
-                            : "" )
+                        + ( config_in.include_values_in_node_labels ? ": " + units_format(d.value) : "" )
+                        + ( config_in.include_percentage_in_node_labels && percentage !== null ? ": " + units_format(percentage) + "%" : "" )
                     : "";
             })
         .style( {   // be explicit about the font specs:
@@ -628,6 +631,7 @@ glob.process_sankey = function () {
         max_places: max_places,
         display_full_precision: 1,
         include_values_in_node_labels: 0,
+        include_percentage_in_node_labels: 0,
         show_labels: 1,
         canvas_width:  600,
         canvas_height: 600,
@@ -663,6 +667,7 @@ glob.process_sankey = function () {
             };
             node_order.push(nodename);
         }
+
         // Even if we have seen a node, there still may be more parameters
         // to add to its spec:
         if ( typeof nodeparams === "object" ) {
@@ -755,15 +760,18 @@ glob.process_sankey = function () {
             source: unique_nodes[flow.source].index,
             target: unique_nodes[flow.target].index,
             value:  flow.amount,
+            sibling_ratio: "778877",
             color:  flow_color,
             opacity:          opacity,
             opacity_on_hover: opacity_on_hover
         };
+
         if (reverse_the_graph) {
             tmp = flow_struct.source;
             flow_struct.source = flow_struct.target;
             flow_struct.target = tmp;
         }
+
         approved_flows.push(flow_struct);
 
         // Save useful information for the flow cross-check:
@@ -771,6 +779,8 @@ glob.process_sankey = function () {
         unique_nodes[flow.source].from_list.push(flow.amount);
         unique_nodes[flow.target].to_sum += Number(flow.amount);
         unique_nodes[flow.target].to_list.push(flow.amount);
+//        unique_nodes[flow.target].parent_amount = unique_nodes[flow.source].;
+
     });
 
     // Construct the approved_nodes structure:
@@ -804,6 +814,8 @@ glob.process_sankey = function () {
             max_node_val   = node_total;
         }
         // approved_nodes = the real node list, formatted for the render routine:
+
+
         approved_nodes.push(readynode);
     });
 
@@ -902,7 +914,7 @@ glob.process_sankey = function () {
     }
 
     // Checkboxes:
-    (["display_full_precision", "include_values_in_node_labels",
+    (["display_full_precision", "include_values_in_node_labels", "include_percentage_in_node_labels",
         "show_labels", "background_transparent"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
     });
