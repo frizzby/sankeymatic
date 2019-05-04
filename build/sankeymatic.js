@@ -222,7 +222,7 @@ glob.render_updated_outputs = function () {
 // render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
 function render_sankey(nodes_in, flows_in, config_in) {
     var graph_width, graph_height, colorset,
-        units_format, d3_color_scale, svg, sankey, flow, link, node,
+        units_format, d3_color_scale, svg, sankey, flow, link, node, percentage_format,
         node_width    = config_in.node_width,
         node_padding  = config_in.node_padding,
         total_width   = config_in.canvas_width,
@@ -292,6 +292,13 @@ function render_sankey(nodes_in, flows_in, config_in) {
             config_in.display_full_precision);
     };
 
+    percentage_format = function (n) {
+        return format_a_value(n,
+            n < 1 && n > 0 ? 1 : config_in.max_places,  separators,
+            config_in.unit_prefix, config_in.unit_suffix,
+            config_in.display_full_precision);
+    };
+
     // Clear out any old contents:
     make_diagram_blank(
       total_width, total_height,
@@ -306,7 +313,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
             background_clause(config_in.background_color, config_in.background_transparent))
         .append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
-
 
     // create a sankey object & its properties..
     sankey = d3.sankey()
@@ -433,9 +439,9 @@ function render_sankey(nodes_in, flows_in, config_in) {
                 let percentage = (d.targetLinks.length && Number(d.value) / d.targetLinks[0].source.value * 100) || null;
                 //debugger;
                 return config_in.show_labels
-                    ? d.name
+                    ? d.name.replace(/\{.*\}/, "")
                         + ( config_in.include_values_in_node_labels ? ": " + units_format(d.value) : "" )
-                        + ( config_in.include_percentage_in_node_labels && percentage !== null ? ": " + units_format(percentage) + "%" : "" )
+                        + ( config_in.include_percentage_in_node_labels && percentage !== null ? ": " + percentage_format(percentage) + "%" : "" )
                     : "";
             })
         .style( {   // be explicit about the font specs:
